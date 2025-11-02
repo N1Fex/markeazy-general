@@ -1,0 +1,73 @@
+name: markeazy
+
+services:
+
+  backend:
+    container_name: spring-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - ${BACKEND_PORT}:${BACKEND_PORT}
+    depends_on:
+      - db
+      - elasticsearch
+    environment:
+      - "SPRING_PROFILES_ACTIVE=prod"
+      - ELASTICSEARCH_URL=${ELASTICSEARCH_URL}
+    env_file:
+      - .env
+
+  frontend:
+    container_name: react-frontend
+    build:
+      args:
+        REACT_APP_BACKEND_URL: http://localhost:${BACKEND_PORT}/api/v1
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - ${FRONTEND_PORT}:${FRONTEND_PORT}
+
+  db:
+    container_name: postgres
+    image: postgres:16.10-alpine
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB_NAME}
+    ports:
+      - ${DB_PORT}:5432
+    healthcheck:
+      test: [ "CMD", "pg_isready -U ${POSTGRES_USER} -d $${POSTGRES_DB_NAME} -p ${DB_PORT}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  pgadmin:
+    container_name: pgadmin4
+    image: dpage/pgadmin4:9.9
+    ports:
+      - "5050:80"
+    env_file:
+      - .env
+
+  elasticsearch:
+    container_name: elastic-search
+    image: elastic/elasticsearch:8.18.8
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms128m -Xmx128m"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+
+volumes:
+  es-data:
+  db-data:

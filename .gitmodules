@@ -1,0 +1,6 @@
+[submodule "backend"]
+	path = backend
+	url = https://github.com/N1Fex/markeazy-backend
+[submodule "frontend"]
+	path = frontend
+	url = https://github.com/N1Fex/markeazy-frontend
